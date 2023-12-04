@@ -139,7 +139,7 @@ jobs:
         run: |
           token=$(echo "${{ secrets.GITHUB_TOKEN }}" | base64)
           tags=$(curl -H "Authorization: Bearer $token" https://ghcr.io/v2/${{ github.actor }}/kernel/tags/list)
-          built=$(echo "$tags" | jq -r '.tags | contains(["${{ steps.hash.outputs.sha_short }}"])')
+          built=$(echo "$tags" | jq -r '.tags | . != null and contains(["${{ steps.hash.outputs.sha_short }}"])')
           echo "built=$built" >> $GITHUB_OUTPUT
 
       - name: Maximize build space
