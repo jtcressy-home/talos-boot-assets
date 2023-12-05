@@ -138,7 +138,7 @@ jobs:
         id: check
         run: |
           token=$(echo "${{ secrets.GITHUB_TOKEN }}" | base64)
-          tags=$(curl -H "Authorization: Bearer $token" https://ghcr.io/v2/${{ github.actor }}/kernel/tags/list)
+          tags=$(curl -H "Authorization: Bearer $token" https://ghcr.io/v2/${{ github.repository_owner}}/kernel/tags/list)
           built=$(echo "$tags" | jq -r '.tags | . != null and contains(["${{ steps.hash.outputs.sha_short }}"])')
           echo "built=$built" >> $GITHUB_OUTPUT
 
@@ -170,7 +170,7 @@ jobs:
         if: steps.check.outputs.built == 'false'
         env:
           PLATFORM: linux/amd64
-          USERNAME: ${{ github.actor }}
+          USERNAME: ${{ github.repository_owner}}
         run: make kernel PUSH=true
 
   build-installer:
@@ -202,9 +202,9 @@ jobs:
       - name: Build installer image
         env:
           PLATFORM: linux/amd64
-          USERNAME: ${{ github.actor }}
+          USERNAME: ${{ github.repository_owner}}
           TAG: ${{ needs.check-releases.outputs.talosReleaseTag }}
-          PKG_KERNEL: ghcr.io/${{ github.actor }}/kernel:${{ needs.build-kernel.outputs.sha }}
+          PKG_KERNEL: ghcr.io/${{ github.repository_owner}}/kernel:${{ needs.build-kernel.outputs.sha }}
         run: make installer PUSH=true
 
   build-boot-assets:
@@ -227,7 +227,7 @@ jobs:
         run: |
           /bin/imager installer \
             --arch amd64 \
-            --base-installer-image ghcr.io/${{ github.actor }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
+            --base-installer-image ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
             --system-extension-image ghcr.io/siderolabs/intel-ucode:${{ env.INTEL_UCODE_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/i915-ucode:${{ env.I915_UCODE_VERSION }}
 
@@ -274,7 +274,7 @@ jobs:
           crane push \
             --platform linux/amd64 \
             /tmp/talos-build-assets/metal-amd64-installer.tar \
-            ghcr.io/${{ github.actor }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
+            ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
 
   build-secure-boot-assets:
     needs: [ check-releases, build-installer ]
@@ -328,7 +328,7 @@ jobs:
         run: |
           /bin/imager secureboot-installer \
             --arch amd64 \
-            --base-installer-image ghcr.io/${{ github.actor }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
+            --base-installer-image ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
             --system-extension-image ghcr.io/siderolabs/intel-ucode:${{ env.INTEL_UCODE_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/i915-ucode:${{ env.I915_UCODE_VERSION }}
 
@@ -375,7 +375,7 @@ jobs:
           crane push \
             --platform linux/amd64 \
             /tmp/talos-build-assets/metal-amd64-secureboot-installer.tar \
-            ghcr.io/${{ github.actor }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}-secureboot
+            ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}-secureboot
 
   create-release:
     needs: [ check-releases, push-installer-image, push-secureboot-installer-image ]
