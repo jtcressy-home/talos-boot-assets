@@ -14,6 +14,18 @@ env:
   INTEL_UCODE_VERSION: 20231114
   # renovate: depName=ghcr.io/siderolabs/i915-ucode
   I915_UCODE_VERSION: 20231111
+  # renovate: depName=ghcr.io/siderolabs/amd-ucode
+  AMD_UCODE_VERSION: 20231111
+  # renovate: depName=ghcr.io/siderolabs/amdgpu-firmware
+  AMDGPU_FIRMWARE_VERSION: 20231111
+  # renovate: depName=ghcr.io/siderolabs/drbd
+  DRBD_VERSION: 9.2.4-v1.5.5
+  # renovate: depName=ghcr.io/siderolabs/tailscale
+  TAILSCALE_VERSION: 1.54.0
+  # renovate: depName=ghcr.io/siderolabs/iscsi-tools
+  ISCSI_TOOLS_VERSION: v0.1.4
+  # renovate: depName=ghcr.io/siderolabs/thunderbolt
+  THUNDERBOLT_VERSION: v1.5.5
 
 jobs:
   check-releases:
@@ -229,7 +241,14 @@ jobs:
             --arch amd64 \
             --base-installer-image ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
             --system-extension-image ghcr.io/siderolabs/intel-ucode:${{ env.INTEL_UCODE_VERSION }} \
-            --system-extension-image ghcr.io/siderolabs/i915-ucode:${{ env.I915_UCODE_VERSION }}
+            --system-extension-image ghcr.io/siderolabs/i915-ucode:${{ env.I915_UCODE_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/amd-ucode:${{ env.AMD_UCODE_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/amdgpu-firmware:${{ env.AMDGPU_FIRMWARE_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/drbd:${{ env.DRBD_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/tailscale:${{ env.TAILSCALE_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/iscsi-tools:${{ env.ISCSI_TOOLS_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/thunderbolt:${{ env.THUNDERBOLT_VERSION }}
+
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v3

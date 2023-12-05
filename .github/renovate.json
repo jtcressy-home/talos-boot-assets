@@ -14,7 +14,13 @@
       "matchDatasources": ["docker"],
       "matchPackageNames": [
         "ghcr.io/siderolabs/intel-ucode",
-        "ghcr.io/siderolabs/i915-ucode"
+        "ghcr.io/siderolabs/i915-ucode",
+        "ghcr.io/siderolabs/amd-ucode",
+        "ghcr.io/siderolabs/amdgpu-firmware",
+        "ghcr.io/siderolabs/drbd",
+        "ghcr.io/siderolabs/tailscale",
+        "ghcr.io/siderolabs/iscsi-tools",
+        "ghcr.io/siderolabs/thunderbolt"
       ],
       "versioning": "regex:^(?<major>\\d{4})(?<minor>\\d{2})(?<patch>\\d{2})\\.?(?<build>\\d+)?$"
     }
