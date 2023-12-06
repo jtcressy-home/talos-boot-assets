@@ -128,7 +128,7 @@ jobs:
     needs: [ check-releases, sync-pkgs-fork ]
     if: needs.check-releases.outputs.newTalosReleaseFound || github.event_name == 'workflow_dispatch'
     name: Build kernel image
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && 'buildjet-16vcpu-ubuntu-2204' || 'ubuntu-latest' }}
 
     outputs:
       sha: ${{ steps.hash.outputs.sha_short }}
@@ -189,7 +189,7 @@ jobs:
     needs: [ check-releases, sync-talos-fork, build-kernel ]
     if: needs.check-releases.outputs.newTalosReleaseFound || github.event_name == 'workflow_dispatch'
     name: Build installer image
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && 'buildjet-16vcpu-ubuntu-2204' || 'ubuntu-latest' }}
 
     steps:
       - name: Checkout
@@ -223,7 +223,7 @@ jobs:
     needs: [ check-releases, build-installer ]
     if: needs.check-releases.outputs.newTalosReleaseFound || github.event_name == 'workflow_dispatch'
     name: Build boot assets
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && 'buildjet-16vcpu-ubuntu-2204' || 'ubuntu-latest' }}
 
     permissions:
       contents: write
@@ -248,7 +248,7 @@ jobs:
             --system-extension-image ghcr.io/siderolabs/tailscale:${{ env.TAILSCALE_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/iscsi-tools:${{ env.ISCSI_TOOLS_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/thunderbolt:${{ env.THUNDERBOLT_VERSION }}
-      
+
       - name: Build arm64 installer w/ Extensions
         run: |
           /bin/imager installer \
