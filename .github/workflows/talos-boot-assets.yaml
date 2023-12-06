@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.actor }}-build
+  group: ${{ github.repository_owner }}-build
 
 env:
   # renovate: depName=ghcr.io/siderolabs/intel-ucode
@@ -181,7 +181,7 @@ jobs:
       - name: Build kernel image
         if: steps.check.outputs.built == 'false'
         env:
-          PLATFORM: linux/amd64
+          PLATFORM: linux/amd64,linux/arm64
           USERNAME: ${{ github.repository_owner}}
         run: make kernel PUSH=true
 
@@ -213,7 +213,7 @@ jobs:
 
       - name: Build installer image
         env:
-          PLATFORM: linux/amd64
+          PLATFORM: linux/amd64,linux/arm64
           USERNAME: ${{ github.repository_owner}}
           TAG: ${{ needs.check-releases.outputs.talosReleaseTag }}
           PKG_KERNEL: ghcr.io/${{ github.repository_owner}}/kernel:${{ needs.build-kernel.outputs.sha }}
@@ -229,13 +229,13 @@ jobs:
       contents: write
 
     container:
-      image: ghcr.io/jtcressy-home/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
+      image: ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
       options: --privileged
       volumes:
         - /dev:/dev
 
     steps:
-      - name: Build amd64 installer w/ Intel & I915 Ucode
+      - name: Build amd64 installer w/ Extensions
         run: |
           /bin/imager installer \
             --arch amd64 \
@@ -248,13 +248,21 @@ jobs:
             --system-extension-image ghcr.io/siderolabs/tailscale:${{ env.TAILSCALE_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/iscsi-tools:${{ env.ISCSI_TOOLS_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/thunderbolt:${{ env.THUNDERBOLT_VERSION }}
-
-
+      
+      - name: Build arm64 installer w/ Extensions
+        run: |
+          /bin/imager installer \
+            --arch arm64 \
+            --base-installer-image ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
+            --system-extension-image ghcr.io/siderolabs/drbd:${{ env.DRBD_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/tailscale:${{ env.TAILSCALE_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/iscsi-tools:${{ env.ISCSI_TOOLS_VERSION }}
+            
       - name: Upload installer artifact
         uses: actions/upload-artifact@v3
         with:
           name: talos-installer
-          path: /out/metal-amd64-installer.tar
+          path: /out/metal-*-installer.tar
           if-no-files-found: error
           retention-days: 1
 
@@ -293,6 +301,10 @@ jobs:
           crane push \
             --platform linux/amd64 \
             /tmp/talos-build-assets/metal-amd64-installer.tar \
+            ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} && \
+          crane push \
+            --platform linux/arm64 \
+            /tmp/talos-build-assets/metal-arm64-installer.tar \
             ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
 
   build-secure-boot-assets:
@@ -305,7 +317,7 @@ jobs:
       contents: write
 
     container:
-      image: ghcr.io/jtcressy-home/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
+      image: ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
       options: --privileged
       volumes:
         - /dev:/dev
@@ -343,19 +355,34 @@ jobs:
           fileDir: /secureboot
           fileName: pcr-signing-public-key.pem
 
-      - name: Build amd64 secureboot-installer w/ Intel & I915 Ucode
+      - name: Build amd64 secureboot-installer w/ Extensions
         run: |
           /bin/imager secureboot-installer \
             --arch amd64 \
             --base-installer-image ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
             --system-extension-image ghcr.io/siderolabs/intel-ucode:${{ env.INTEL_UCODE_VERSION }} \
-            --system-extension-image ghcr.io/siderolabs/i915-ucode:${{ env.I915_UCODE_VERSION }}
+            --system-extension-image ghcr.io/siderolabs/i915-ucode:${{ env.I915_UCODE_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/amd-ucode:${{ env.AMD_UCODE_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/amdgpu-firmware:${{ env.AMDGPU_FIRMWARE_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/drbd:${{ env.DRBD_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/tailscale:${{ env.TAILSCALE_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/iscsi-tools:${{ env.ISCSI_TOOLS_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/thunderbolt:${{ env.THUNDERBOLT_VERSION }}
+        
+      - name: Build arm64 secureboot-installer w/ Extensions
+        run: |
+          /bin/imager secureboot-installer \
+            --arch arm64 \
+            --base-installer-image ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
+            --system-extension-image ghcr.io/siderolabs/drbd:${{ env.DRBD_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/tailscale:${{ env.TAILSCALE_VERSION }} \
+            --system-extension-image ghcr.io/siderolabs/iscsi-tools:${{ env.ISCSI_TOOLS_VERSION }}
 
       - name: Upload secureboot-installer artifact
         uses: actions/upload-artifact@v3
         with:
           name: talos-secureboot-installer
-          path: /out/metal-amd64-secureboot-installer.tar
+          path: /out/metal-*-secureboot-installer.tar
           if-no-files-found: error
           retention-days: 1
 
@@ -394,6 +421,10 @@ jobs:
           crane push \
             --platform linux/amd64 \
             /tmp/talos-build-assets/metal-amd64-secureboot-installer.tar \
+            ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}-secureboot && \
+          crane push \
+            --platform linux/arm64 \
+            /tmp/talos-build-assets/metal-arm64-secureboot-installer.tar \
             ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}-secureboot
 
   create-release:
