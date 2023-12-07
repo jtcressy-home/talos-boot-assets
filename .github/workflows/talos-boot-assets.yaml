@@ -223,7 +223,14 @@ jobs:
     needs: [ check-releases, build-installer ]
     if: needs.check-releases.outputs.newTalosReleaseFound || github.event_name == 'workflow_dispatch'
     name: Build boot assets
-    runs-on: ${{ github.event_name == 'workflow_dispatch' && 'buildjet-16vcpu-ubuntu-2204' || 'ubuntu-latest' }}
+    strategy:
+      matrix:
+        include:
+        - arch: amd64
+          runs-on: buildjet-16vcpu-ubuntu-2204
+        - arch: arm64
+          runs-on: buildjet-16vcpu-ubuntu-2204-arm
+    runs-on: ${{ matrix.runs-on }}
 
     permissions:
       contents: write
@@ -235,10 +242,10 @@ jobs:
         - /dev:/dev
 
     steps:
-      - name: Build amd64 installer w/ Extensions
+      - name: Build ${{ matrix.arch }} installer w/ Extensions
         run: |
           /bin/imager installer \
-            --arch amd64 \
+            --arch ${{ matrix.arch }} \
             --base-installer-image ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
             --system-extension-image ghcr.io/siderolabs/intel-ucode:${{ env.INTEL_UCODE_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/i915-ucode:${{ env.I915_UCODE_VERSION }} \
@@ -248,15 +255,6 @@ jobs:
             --system-extension-image ghcr.io/siderolabs/tailscale:${{ env.TAILSCALE_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/iscsi-tools:${{ env.ISCSI_TOOLS_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/thunderbolt:${{ env.THUNDERBOLT_VERSION }}
-
-      - name: Build arm64 installer w/ Extensions
-        run: |
-          /bin/imager installer \
-            --arch arm64 \
-            --base-installer-image ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
-            --system-extension-image ghcr.io/siderolabs/drbd:${{ env.DRBD_VERSION }} \
-            --system-extension-image ghcr.io/siderolabs/tailscale:${{ env.TAILSCALE_VERSION }} \
-            --system-extension-image ghcr.io/siderolabs/iscsi-tools:${{ env.ISCSI_TOOLS_VERSION }}
             
       - name: Upload installer artifact
         uses: actions/upload-artifact@v3
