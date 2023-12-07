@@ -328,7 +328,7 @@ jobs:
         uses: timheuer/base64-to-file@784a1a4a994315802b7d8e2084e116e783d157be # v1.2.4
         with:
           encodedString: "${{ secrets.UKI_SIGNING_CERT }}"
-          fileDir: /secureboot
+          fileDir: _out
           fileName: uki-signing-cert.pem
 
       - name: Write uki-signing-key.pem
@@ -336,7 +336,7 @@ jobs:
         uses: timheuer/base64-to-file@784a1a4a994315802b7d8e2084e116e783d157be # v1.2.4
         with:
           encodedString: "${{ secrets.UKI_SIGNING_KEY }}"
-          fileDir: /secureboot
+          fileDir: _out
           fileName: uki-signing-key.pem
 
       - name: Write pcr-signing-key.pem
@@ -344,7 +344,7 @@ jobs:
         uses: timheuer/base64-to-file@784a1a4a994315802b7d8e2084e116e783d157be # v1.2.4
         with:
           encodedString: "${{ secrets.PCR_SIGNING_KEY }}"
-          fileDir: /secureboot
+          fileDir: _out
           fileName: pcr-signing-key.pem
 
       - name: Write pcr-signing-public-key.pem
@@ -352,7 +352,7 @@ jobs:
         uses: timheuer/base64-to-file@784a1a4a994315802b7d8e2084e116e783d157be # v1.2.4
         with:
           encodedString: "${{ secrets.PCR_SIGNING_PUBLIC_KEY }}"
-          fileDir: /secureboot
+          fileDir: _out
           fileName: pcr-signing-public-key.pem
 
       - name: Build ${{ matrix.arch }} secureboot-installer w/ Extensions
@@ -373,7 +373,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: talos-secureboot-installer
-          path: /out/metal-*-secureboot-installer.tar
+          path: _out/metal-*-secureboot-installer.tar
           if-no-files-found: error
           retention-days: 1
 
