@@ -303,18 +303,26 @@ jobs:
     needs: [ check-releases, build-installer ]
     if: needs.check-releases.outputs.newTalosReleaseFound || github.event_name == 'workflow_dispatch'
     name: Build secure boot assets
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+        - arch: amd64
+          runs-on: buildjet-16vcpu-ubuntu-2204
+        - arch: arm64
+          runs-on: buildjet-16vcpu-ubuntu-2204-arm
+    runs-on: ${{ matrix.runs-on }}
 
     permissions:
       contents: write
 
-    container:
-      image: ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
-      options: --privileged
-      volumes:
-        - /dev:/dev
+    # container:
+    #   image: ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
+    #   options: --privileged
+    #   volumes:
+    #     - /dev:/dev
 
     steps:
+      - run: mkdir -p $PWD/_out
       - name: Write uki-signing-cert.pem
         id: uki-signing-cert-pem
         uses: timheuer/base64-to-file@784a1a4a994315802b7d8e2084e116e783d157be # v1.2.4
@@ -347,10 +355,10 @@ jobs:
           fileDir: /secureboot
           fileName: pcr-signing-public-key.pem
 
-      - name: Build amd64 secureboot-installer w/ Extensions
+      - name: Build ${{ matrix.arch }} secureboot-installer w/ Extensions
         run: |
-          /bin/imager secureboot-installer \
-            --arch amd64 \
+          docker run --rm --platform=linux/${{ matrix.arch }} -t -v $PWD/_out:/out -v /dev:/dev --privileged --entrypoint /bin/imager ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} secureboot-installer \
+            --arch ${{ matrix.arch }} \
             --base-installer-image ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
             --system-extension-image ghcr.io/siderolabs/intel-ucode:${{ env.INTEL_UCODE_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/i915-ucode:${{ env.I915_UCODE_VERSION }} \
@@ -360,15 +368,6 @@ jobs:
             --system-extension-image ghcr.io/siderolabs/tailscale:${{ env.TAILSCALE_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/iscsi-tools:${{ env.ISCSI_TOOLS_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/thunderbolt:${{ env.THUNDERBOLT_VERSION }}
-        
-      - name: Build arm64 secureboot-installer w/ Extensions
-        run: |
-          /bin/imager secureboot-installer \
-            --arch arm64 \
-            --base-installer-image ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
-            --system-extension-image ghcr.io/siderolabs/drbd:${{ env.DRBD_VERSION }} \
-            --system-extension-image ghcr.io/siderolabs/tailscale:${{ env.TAILSCALE_VERSION }} \
-            --system-extension-image ghcr.io/siderolabs/iscsi-tools:${{ env.ISCSI_TOOLS_VERSION }}
 
       - name: Upload secureboot-installer artifact
         uses: actions/upload-artifact@v3
