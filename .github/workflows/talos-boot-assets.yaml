@@ -290,7 +290,7 @@ jobs:
       - uses: imjasonh/setup-crane@v0.3
       - name: Push installer image
         run: |
-          crane index append -t ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
+          crane index append \
             -m <(crane push \
               --platform linux/amd64 \
               /tmp/talos-build-assets/metal-amd64-installer.tar \
@@ -300,7 +300,8 @@ jobs:
               --platform linux/arm64 \
               /tmp/talos-build-assets/metal-arm64-installer.tar \
               ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
-            )
+            ) \
+            -t ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
 
   build-secure-boot-assets:
     needs: [ check-releases, build-installer ]
@@ -412,7 +413,7 @@ jobs:
       - uses: imjasonh/setup-crane@v0.3
       - name: Push secureboot-installer image
         run: |
-          crane index append -t ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}-secureboot \
+          crane index append \
             -m <(crane push \
               --platform linux/amd64 \
               /tmp/talos-build-assets/metal-amd64-secureboot-installer.tar \
@@ -422,7 +423,8 @@ jobs:
               --platform linux/arm64 \
               /tmp/talos-build-assets/metal-arm64-secureboot-installer.tar \
               ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}-secureboot \
-            )
+            ) \
+            -t ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}-secureboot
 
   create-release:
     needs: [ check-releases, push-installer-image, push-secureboot-installer-image ]
