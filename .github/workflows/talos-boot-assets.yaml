@@ -238,7 +238,7 @@ jobs:
     steps:
       - name: Build ${{ matrix.arch }} installer w/ Extensions
         run: |
-          docker run --rm --platform=linux/${{ matrix.arch }} -t -v $PWD/_out:/out -v /dev:/dev --privileged -e /bin/imager ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} installer \
+          docker run --rm --platform=linux/${{ matrix.arch }} -t -v $PWD/_out:/out -v /dev:/dev --privileged --entrypoint /bin/imager ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} installer \
             --arch ${{ matrix.arch }} \
             --base-installer-image ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
             --system-extension-image ghcr.io/siderolabs/intel-ucode:${{ env.INTEL_UCODE_VERSION }} \
