@@ -235,16 +235,10 @@ jobs:
     permissions:
       contents: write
 
-    container:
-      image: ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
-      options: --privileged
-      volumes:
-        - /dev:/dev
-
     steps:
       - name: Build ${{ matrix.arch }} installer w/ Extensions
         run: |
-          /bin/imager installer \
+          docker run --rm --platform=linux/${{ matrix.arch }} -t -v $PWD/_out:/out -v /dev:/dev --privileged -e /bin/imager ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} installer \
             --arch ${{ matrix.arch }} \
             --base-installer-image ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
             --system-extension-image ghcr.io/siderolabs/intel-ucode:${{ env.INTEL_UCODE_VERSION }} \
@@ -260,7 +254,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: talos-installer
-          path: /out/metal-*-installer.tar
+          path: _out/metal-*-installer.tar
           if-no-files-found: error
           retention-days: 1
 
