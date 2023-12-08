@@ -12,18 +12,11 @@
       "groupName": "Talos boot assets"
     },
     {
-      "matchDatasources": ["docker"],
-      "matchPackageNames": [
-        "ghcr.io/siderolabs/intel-ucode",
-        "ghcr.io/siderolabs/i915-ucode",
-        "ghcr.io/siderolabs/amd-ucode",
-        "ghcr.io/siderolabs/amdgpu-firmware",
-        "ghcr.io/siderolabs/drbd",
-        "ghcr.io/siderolabs/tailscale",
-        "ghcr.io/siderolabs/iscsi-tools",
-        "ghcr.io/siderolabs/thunderbolt"
+      "matchFileNames": [".github/workflows/talos-boot-assets.yaml"],
+      "matchStrings": [
+        "depName=(?<depName>.*?) datasource=(?<datasource>.*?)( versioning=(?<versioning>.*?))?\\s  .*?_VERSION:(?<currentValue>.*)\\s"
       ],
-      "versioning": "loose"
+      "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}semver{{/if}}"
     }
   ],
   "regexManagers": [

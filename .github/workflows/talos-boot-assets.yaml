@@ -10,21 +10,21 @@ concurrency:
   group: ${{ github.repository_owner }}-build
 
 env:
-  # renovate: depName=ghcr.io/siderolabs/intel-ucode
+  # renovate: depName=ghcr.io/siderolabs/intel-ucode datasource=docker versioning=loose
   INTEL_UCODE_VERSION: 20231114
-  # renovate: depName=ghcr.io/siderolabs/i915-ucode
+  # renovate: depName=ghcr.io/siderolabs/i915-ucode datasource=docker versioning=loose
   I915_UCODE_VERSION: 20231111
-  # renovate: depName=ghcr.io/siderolabs/amd-ucode
+  # renovate: depName=ghcr.io/siderolabs/amd-ucode datasource=docker versioning=loose
   AMD_UCODE_VERSION: 20231111
-  # renovate: depName=ghcr.io/siderolabs/amdgpu-firmware
+  # renovate: depName=ghcr.io/siderolabs/amdgpu-firmware datasource=docker versioning=loose
   AMDGPU_FIRMWARE_VERSION: 20231111
-  # renovate: depName=ghcr.io/siderolabs/drbd
+  # renovate: manual only for now
   DRBD_VERSION: 9.2.4-v1.5.5
-  # renovate: depName=ghcr.io/siderolabs/tailscale
+  # renovate: depName=ghcr.io/siderolabs/tailscale datasource=docker
   TAILSCALE_VERSION: 1.54.0
-  # renovate: depName=ghcr.io/siderolabs/iscsi-tools
+  # renovate: depName=ghcr.io/siderolabs/iscsi-tools datasource=docker versioning=semver-coerced
   ISCSI_TOOLS_VERSION: v0.1.4
-  # renovate: depName=ghcr.io/siderolabs/thunderbolt
+  # renovate: depName=ghcr.io/siderolabs/thunderbolt datasource=docker versioning=semver-coerced
   THUNDERBOLT_VERSION: v1.5.5
 
 jobs:
