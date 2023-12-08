@@ -220,7 +220,7 @@ jobs:
           USERNAME: ${{ github.repository_owner}}
           TAG: ${{ needs.check-releases.outputs.talosReleaseTag }}
           # PKG_KERNEL: ghcr.io/${{ github.repository_owner}}/kernel:${{ needs.build-kernel.outputs.sha }}
-          PKG_KERNEL: ghcr.io/siderolabs/kernel:${{ needs.check-releases.outputs.talosReleaseTag }}
+          # PKG_KERNEL: ghcr.io/siderolabs/kernel:${{ needs.check-releases.outputs.talosReleaseTag }}
         run: make installer PUSH=true
 
   build-boot-assets:
