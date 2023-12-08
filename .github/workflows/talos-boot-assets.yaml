@@ -404,22 +404,22 @@ jobs:
 
       - name: Push secureboot-installer image
         env:
-          BASE_TAG: ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}-secureboot
+          BASE_TAG: ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
         run: |
           docker load -i /tmp/talos-build-assets/metal-amd64-secureboot-installer.tar
-          docker tag ${BASE_TAG} ${BASE_TAG}-amd64
+          docker tag ${BASE_TAG} ${BASE_TAG}-secureboot-amd64
           docker rmi ${BASE_TAG}
           docker load -i /tmp/talos-build-assets/metal-arm64-secureboot-installer.tar
-          docker tag ${BASE_TAG} ${BASE_TAG}-arm64
+          docker tag ${BASE_TAG} ${BASE_TAG}-secureboot-arm64
           docker rmi ${BASE_TAG}
-          docker push ${BASE_TAG}-amd64
-          docker push ${BASE_TAG}-arm64
+          docker push ${BASE_TAG}-secureboot-amd64
+          docker push ${BASE_TAG}-secureboot-arm64
           docker manifest create \
             ${BASE_TAG} \
-            --amend ${BASE_TAG}-amd64 \
-            --amend ${BASE_TAG}-arm64
-          docker manifest annotate ${BASE_TAG} ${BASE_TAG}-amd64 --os linux --arch amd64
-          docker manifest annotate ${BASE_TAG} ${BASE_TAG}-arm64 --os linux --arch arm64
+            --amend ${BASE_TAG}-secureboot-amd64 \
+            --amend ${BASE_TAG}-secureboot-arm64
+          docker manifest annotate ${BASE_TAG} ${BASE_TAG}-secureboot-amd64 --os linux --arch amd64
+          docker manifest annotate ${BASE_TAG} ${BASE_TAG}-secureboot-arm64 --os linux --arch arm64
           docker manifest push ${BASE_TAG}
 
   create-release:
