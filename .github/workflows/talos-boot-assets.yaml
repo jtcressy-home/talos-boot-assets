@@ -297,6 +297,8 @@ jobs:
             ${BASE_TAG} \
             --amend ${BASE_TAG}-amd64 \
             --amend ${BASE_TAG}-arm64
+          docker manifest annotate ${BASE_TAG} ${BASE_TAG}-amd64 --os linux --arch amd64
+          docker manifest annotate ${BASE_TAG} ${BASE_TAG}-arm64 --os linux --arch arm64
           docker manifest push ${BASE_TAG}
 
   build-secure-boot-assets:
@@ -416,6 +418,8 @@ jobs:
             ${BASE_TAG} \
             --amend ${BASE_TAG}-amd64 \
             --amend ${BASE_TAG}-arm64
+          docker manifest annotate ${BASE_TAG} ${BASE_TAG}-amd64 --os linux --arch amd64
+          docker manifest annotate ${BASE_TAG} ${BASE_TAG}-arm64 --os linux --arch arm64
           docker manifest push ${BASE_TAG}
 
   create-release:
