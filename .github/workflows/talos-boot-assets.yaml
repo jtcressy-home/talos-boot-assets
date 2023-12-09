@@ -419,12 +419,12 @@ jobs:
           docker push ${BASE_TAG}-secureboot-amd64
           docker push ${BASE_TAG}-secureboot-arm64
           docker manifest create \
-            ${BASE_TAG} \
+            ${BASE_TAG}-secureboot \
             --amend ${BASE_TAG}-secureboot-amd64 \
             --amend ${BASE_TAG}-secureboot-arm64
           docker manifest annotate ${BASE_TAG} ${BASE_TAG}-secureboot-amd64 --os linux --arch amd64
           docker manifest annotate ${BASE_TAG} ${BASE_TAG}-secureboot-arm64 --os linux --arch arm64
-          docker manifest push ${BASE_TAG}
+          docker manifest push ${BASE_TAG}-secureboot
 
   create-release:
     needs: [ check-releases, push-installer-image, push-secureboot-installer-image ]
