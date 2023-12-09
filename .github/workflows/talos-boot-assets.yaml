@@ -18,14 +18,8 @@ env:
   AMD_UCODE_VERSION: 20231111
   # renovate: depName=ghcr.io/siderolabs/amdgpu-firmware
   AMDGPU_FIRMWARE_VERSION: 20231111
-  # renovate: depName=ghcr.io/siderolabs/drbd
-  DRBD_VERSION: 9.2.4-v1.5.5
   # renovate: depName=ghcr.io/siderolabs/tailscale
   TAILSCALE_VERSION: 1.54.0
-  # renovate: depName=ghcr.io/siderolabs/iscsi-tools versioning=semver-coerced
-  ISCSI_TOOLS_VERSION: v0.1.4
-  # renovate: depName=ghcr.io/siderolabs/thunderbolt versioning=semver-coerced
-  THUNDERBOLT_VERSION: v1.5.5
 
 jobs:
   check-releases:
@@ -240,6 +234,15 @@ jobs:
       contents: write
 
     steps:
+      - uses: imjasonh/setup-crane@v0.3
+      - name: Extension images digests
+        # These extensions are tied to the talos release version, so we can lookup their exact compatible digests
+        run: |
+          for pkg in drbd iscsi-tools thunderbolt;
+          do
+            tag=$(crane export ghcr.io/siderolabs/extensions:${{ needs.check-releases.outputs.talosReleaseTag }} | tar x -O image-digests | grep $pkg)
+            echo "$(echo $pkg | tr '[:lower:]' '[:upper:]' | tr '-' '_')_VERSION=$(echo $tag | cut -d: -f2 -f3)" >> $GITHUB_ENV
+          done
       - name: Build ${{ matrix.arch }} installer w/ Extensions
         run: |
           docker run --rm --platform=linux/${{ matrix.arch }} -t -v $PWD/_out:/out -v /dev:/dev --privileged --entrypoint /bin/imager ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} installer \
@@ -360,7 +363,16 @@ jobs:
           encodedString: "${{ secrets.PCR_SIGNING_PUBLIC_KEY }}"
           fileDir: _out
           fileName: pcr-signing-public-key.pem
-
+      
+      - uses: imjasonh/setup-crane@v0.3
+      - name: Extension images digests
+        # These extensions are tied to the talos release version, so we can lookup their exact compatible digests
+        run: |
+          for pkg in drbd iscsi-tools thunderbolt;
+          do
+            tag=$(crane export ghcr.io/siderolabs/extensions:${{ needs.check-releases.outputs.talosReleaseTag }} | tar x -O image-digests | grep $pkg)
+            echo "$(echo $pkg | tr '[:lower:]' '[:upper:]' | tr '-' '_')_VERSION=$(echo $tag | cut -d: -f2 -f3)" >> $GITHUB_ENV
+          done
       - name: Build ${{ matrix.arch }} secureboot-installer w/ Extensions
         run: |
           docker run --rm --platform=linux/${{ matrix.arch }} -t -v $PWD/_out:/secureboot -v $PWD/_out:/out -v /dev:/dev --privileged --entrypoint /bin/imager ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} secureboot-installer \
