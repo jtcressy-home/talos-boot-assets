@@ -223,17 +223,64 @@ jobs:
     name: Build boot assets
     strategy:
       matrix:
-        include:
-        - arch: amd64
-          runs-on: buildjet-16vcpu-ubuntu-2204
-        - arch: arm64
-          runs-on: buildjet-16vcpu-ubuntu-2204-arm
-    runs-on: ${{ matrix.runs-on }}
+        arch:
+        - amd64
+        - arm64
+        target:
+        - installer
+        - secureboot-installer
+        - iso
+        - secureboot-iso
+    runs-on: ubuntu-latest
 
     permissions:
       contents: write
 
     steps:
+      - run: mkdir -p $PWD/_out
+      
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Write uki-signing-cert.pem
+        if: contains(matrix.target, 'secureboot')
+        id: uki-signing-cert-pem
+        uses: timheuer/base64-to-file@784a1a4a994315802b7d8e2084e116e783d157be # v1.2.4
+        with:
+          encodedString: "${{ secrets.UKI_SIGNING_CERT }}"
+          fileDir: _out
+          fileName: uki-signing-cert.pem
+
+      - name: Write uki-signing-key.pem
+        if: contains(matrix.target, 'secureboot')
+        id: uki-signing-key-pem
+        uses: timheuer/base64-to-file@784a1a4a994315802b7d8e2084e116e783d157be # v1.2.4
+        with:
+          encodedString: "${{ secrets.UKI_SIGNING_KEY }}"
+          fileDir: _out
+          fileName: uki-signing-key.pem
+
+      - name: Write pcr-signing-key.pem
+        if: contains(matrix.target, 'secureboot')
+        id: pcr-signing-key-pem
+        uses: timheuer/base64-to-file@784a1a4a994315802b7d8e2084e116e783d157be # v1.2.4
+        with:
+          encodedString: "${{ secrets.PCR_SIGNING_KEY }}"
+          fileDir: _out
+          fileName: pcr-signing-key.pem
+
+      - name: Write pcr-signing-public-key.pem
+        if: contains(matrix.target, 'secureboot')
+        id: pcr-signing-public-key-pem
+        uses: timheuer/base64-to-file@784a1a4a994315802b7d8e2084e116e783d157be # v1.2.4
+        with:
+          encodedString: "${{ secrets.PCR_SIGNING_PUBLIC_KEY }}"
+          fileDir: _out
+          fileName: pcr-signing-public-key.pem
+
       - uses: imjasonh/setup-crane@v0.3
       - name: Extension images digests
         # These extensions are tied to the talos release version, so we can lookup their exact compatible digests
@@ -245,7 +292,7 @@ jobs:
           done
       - name: Build ${{ matrix.arch }} installer w/ Extensions
         run: |
-          docker run --rm --platform=linux/${{ matrix.arch }} -t -v $PWD/_out:/out -v /dev:/dev --privileged --entrypoint /bin/imager ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} installer \
+          docker run --rm --platform=linux/${{ matrix.arch }} -t -v $PWD/_out:/out -v /dev:/dev --privileged --entrypoint /bin/imager ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} ${{ matrix.target }} \
             --arch ${{ matrix.arch }} \
             --base-installer-image ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
             --system-extension-image ghcr.io/siderolabs/intel-ucode:${{ env.INTEL_UCODE_VERSION }} \
@@ -261,7 +308,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: talos-installer
-          path: _out/metal-*-installer.tar
+          path: _out/metal-*
           if-no-files-found: error
           retention-days: 1
 
@@ -274,6 +321,11 @@ jobs:
       contents: read
       packages: write
 
+    strategy:
+      matrix:
+        variant:
+          - ''
+          - secureboot
     steps:
       - name: Download talos installer image
         uses: actions/download-artifact@v3
@@ -290,156 +342,27 @@ jobs:
 
       - name: Push installer image
         env:
-          BASE_TAG: ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
+          ORIG_TAG: ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
+          VARIANT_TAG: ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}${{ matrix.variant != '' && format('-{0}', matrix.variant) || '' }}
         run: |
-          docker load -i /tmp/talos-build-assets/metal-amd64-installer.tar
-          docker tag ${BASE_TAG} ${BASE_TAG}-amd64
-          docker rmi ${BASE_TAG}
-          docker load -i /tmp/talos-build-assets/metal-arm64-installer.tar
-          docker tag ${BASE_TAG} ${BASE_TAG}-arm64
-          docker rmi ${BASE_TAG}
-          docker push ${BASE_TAG}-amd64
-          docker push ${BASE_TAG}-arm64
+          docker load -i /tmp/talos-build-assets/metal-amd64${{ matrix.variant != '' && format('-{0}', matrix.variant) || '' }}-installer.tar
+          docker tag ${ORIG_TAG} ${VARIANT_TAG}-amd64
+          docker rmi ${ORIG_TAG}
+          docker load -i /tmp/talos-build-assets/metal-arm64${{ matrix.variant != '' && format('-{0}', matrix.variant) || '' }}-installer.tar
+          docker tag ${ORIG_TAG} ${VARIANT_TAG}-arm64
+          docker rmi ${ORIG_TAG}
+          docker push ${VARIANT_TAG}-amd64
+          docker push ${VARIANT_TAG}-arm64
           docker manifest create \
-            ${BASE_TAG} \
-            --amend ${BASE_TAG}-amd64 \
-            --amend ${BASE_TAG}-arm64
-          docker manifest annotate ${BASE_TAG} ${BASE_TAG}-amd64 --os linux --arch amd64
-          docker manifest annotate ${BASE_TAG} ${BASE_TAG}-arm64 --os linux --arch arm64
-          docker manifest push ${BASE_TAG}
-
-  build-secure-boot-assets:
-    needs: [ check-releases, build-installer ]
-    if: needs.check-releases.outputs.newTalosReleaseFound || github.event_name == 'workflow_dispatch'
-    name: Build secure boot assets
-    strategy:
-      matrix:
-        include:
-        - arch: amd64
-          runs-on: buildjet-16vcpu-ubuntu-2204
-        - arch: arm64
-          runs-on: buildjet-16vcpu-ubuntu-2204-arm
-    runs-on: ${{ matrix.runs-on }}
-
-    permissions:
-      contents: write
-
-    # container:
-    #   image: ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
-    #   options: --privileged
-    #   volumes:
-    #     - /dev:/dev
-
-    steps:
-      - run: mkdir -p $PWD/_out
-      - name: Write uki-signing-cert.pem
-        id: uki-signing-cert-pem
-        uses: timheuer/base64-to-file@784a1a4a994315802b7d8e2084e116e783d157be # v1.2.4
-        with:
-          encodedString: "${{ secrets.UKI_SIGNING_CERT }}"
-          fileDir: _out
-          fileName: uki-signing-cert.pem
-
-      - name: Write uki-signing-key.pem
-        id: uki-signing-key-pem
-        uses: timheuer/base64-to-file@784a1a4a994315802b7d8e2084e116e783d157be # v1.2.4
-        with:
-          encodedString: "${{ secrets.UKI_SIGNING_KEY }}"
-          fileDir: _out
-          fileName: uki-signing-key.pem
-
-      - name: Write pcr-signing-key.pem
-        id: pcr-signing-key-pem
-        uses: timheuer/base64-to-file@784a1a4a994315802b7d8e2084e116e783d157be # v1.2.4
-        with:
-          encodedString: "${{ secrets.PCR_SIGNING_KEY }}"
-          fileDir: _out
-          fileName: pcr-signing-key.pem
-
-      - name: Write pcr-signing-public-key.pem
-        id: pcr-signing-public-key-pem
-        uses: timheuer/base64-to-file@784a1a4a994315802b7d8e2084e116e783d157be # v1.2.4
-        with:
-          encodedString: "${{ secrets.PCR_SIGNING_PUBLIC_KEY }}"
-          fileDir: _out
-          fileName: pcr-signing-public-key.pem
-      
-      - uses: imjasonh/setup-crane@v0.3
-      - name: Extension images digests
-        # These extensions are tied to the talos release version, so we can lookup their exact compatible digests
-        run: |
-          for pkg in drbd iscsi-tools thunderbolt;
-          do
-            tag=$(crane export ghcr.io/siderolabs/extensions:${{ needs.check-releases.outputs.talosReleaseTag }} | tar x -O image-digests | grep $pkg)
-            echo "$(echo $pkg | tr '[:lower:]' '[:upper:]' | tr '-' '_')_VERSION=$(echo $tag | cut -d: -f2-3)" >> $GITHUB_ENV
-          done
-      - name: Build ${{ matrix.arch }} secureboot-installer w/ Extensions
-        run: |
-          docker run --rm --platform=linux/${{ matrix.arch }} -t -v $PWD/_out:/secureboot -v $PWD/_out:/out -v /dev:/dev --privileged --entrypoint /bin/imager ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} secureboot-installer \
-            --arch ${{ matrix.arch }} \
-            --base-installer-image ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
-            --system-extension-image ghcr.io/siderolabs/intel-ucode:${{ env.INTEL_UCODE_VERSION }} \
-            --system-extension-image ghcr.io/siderolabs/i915-ucode:${{ env.I915_UCODE_VERSION }} \
-            --system-extension-image ghcr.io/siderolabs/amd-ucode:${{ env.AMD_UCODE_VERSION }} \
-            --system-extension-image ghcr.io/siderolabs/amdgpu-firmware:${{ env.AMDGPU_FIRMWARE_VERSION }} \
-            --system-extension-image ghcr.io/siderolabs/drbd:${{ env.DRBD_VERSION }} \
-            --system-extension-image ghcr.io/siderolabs/tailscale:${{ env.TAILSCALE_VERSION }} \
-            --system-extension-image ghcr.io/siderolabs/iscsi-tools:${{ env.ISCSI_TOOLS_VERSION }} \
-            --system-extension-image ghcr.io/siderolabs/thunderbolt:${{ env.THUNDERBOLT_VERSION }}
-
-      - name: Upload secureboot-installer artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: talos-secureboot-installer
-          path: _out/metal-*-secureboot-installer.tar
-          if-no-files-found: error
-          retention-days: 1
-
-  push-secureboot-installer-image:
-    needs: [ check-releases, build-secure-boot-assets ]
-    name: Push secureboot-installer image
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Download talos secureboot-installer image
-        uses: actions/download-artifact@v3
-        with:
-          name: talos-secureboot-installer
-          path: /tmp/talos-build-assets
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3.0.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Push secureboot-installer image
-        env:
-          BASE_TAG: ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
-        run: |
-          docker load -i /tmp/talos-build-assets/metal-amd64-secureboot-installer.tar
-          docker tag ${BASE_TAG} ${BASE_TAG}-secureboot-amd64
-          docker rmi ${BASE_TAG}
-          docker load -i /tmp/talos-build-assets/metal-arm64-secureboot-installer.tar
-          docker tag ${BASE_TAG} ${BASE_TAG}-secureboot-arm64
-          docker rmi ${BASE_TAG}
-          docker push ${BASE_TAG}-secureboot-amd64
-          docker push ${BASE_TAG}-secureboot-arm64
-          docker manifest create \
-            ${BASE_TAG}-secureboot \
-            --amend ${BASE_TAG}-secureboot-amd64 \
-            --amend ${BASE_TAG}-secureboot-arm64
-          docker manifest annotate ${BASE_TAG}-secureboot ${BASE_TAG}-secureboot-amd64 --os linux --arch amd64
-          docker manifest annotate ${BASE_TAG}-secureboot ${BASE_TAG}-secureboot-arm64 --os linux --arch arm64
-          docker manifest push ${BASE_TAG}-secureboot
+            ${VARIANT_TAG} \
+            --amend ${VARIANT_TAG}-amd64 \
+            --amend ${VARIANT_TAG}-arm64
+          docker manifest annotate ${VARIANT_TAG} ${VARIANT_TAG}-amd64 --os linux --arch amd64
+          docker manifest annotate ${VARIANT_TAG} ${VARIANT_TAG}-arm64 --os linux --arch arm64
+          docker manifest push ${VARIANT_TAG}
 
   create-release:
-    needs: [ check-releases, push-installer-image, push-secureboot-installer-image ]
+    needs: [ check-releases, build-boot-assets, push-installer-image ]
     if: needs.check-releases.outputs.newTalosReleaseFound
     name: Create a new release
     runs-on: ubuntu-latest
@@ -448,8 +371,19 @@ jobs:
       contents: write
 
     steps:
+      - name: Download installer artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: talos-installer
+          path: /tmp/talos-build-assets
       - name: Create a new release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.check-releases.outputs.talosReleaseTag }}
           body: ${{ needs.check-releases.outputs.talosReleaseBody }}
+          files: |
+            /tmp/talos-build-assets/metal-amd64.iso
+            /tmp/talos-build-assets/metal-arm64.iso
+            /tmp/talos-build-assets/metal-amd64-secureboot.iso
+            /tmp/talos-build-assets/metal-arm64-secureboot.iso
+        
