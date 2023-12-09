@@ -371,7 +371,7 @@ jobs:
           for pkg in drbd iscsi-tools thunderbolt;
           do
             tag=$(crane export ghcr.io/siderolabs/extensions:${{ needs.check-releases.outputs.talosReleaseTag }} | tar x -O image-digests | grep $pkg)
-            echo "$(echo $pkg | tr '[:lower:]' '[:upper:]' | tr '-' '_')_VERSION=$(echo $tag | cut -d: -f2 -f3)" >> $GITHUB_ENV
+            echo "$(echo $pkg | tr '[:lower:]' '[:upper:]' | tr '-' '_')_VERSION=$(echo $tag | cut -d: -f2-3)" >> $GITHUB_ENV
           done
       - name: Build ${{ matrix.arch }} secureboot-installer w/ Extensions
         run: |
