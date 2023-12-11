@@ -237,6 +237,8 @@ jobs:
 
     permissions:
       contents: write
+    env:
+      TALOSCTL_VERSION: ${{ needs.check-releases.outputs.talosReleaseTag }}
 
     steps:
       - run: mkdir -p $PWD/_out
@@ -244,7 +246,7 @@ jobs:
         uses: asdf-vm/actions/install@v2
         with:
           tool_versions: |
-            talosctl ${{ needs.check-releases.outputs.talosReleaseTag }}
+            talosctl ${TALOSCTL_VERSION#v}
       - name: Install talosctl
         run: |
           asdf plugin add talosctl
