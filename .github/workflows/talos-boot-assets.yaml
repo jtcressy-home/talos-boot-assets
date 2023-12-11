@@ -240,6 +240,9 @@ jobs:
       - run: mkdir -p $PWD/_out
       - name: Install asdf
         uses: asdf-vm/actions/install@v2
+        with:
+          tool_versions: |
+            talosctl latest
       - name: Install talosctl
         run: |
           asdf plugin add talosctl
