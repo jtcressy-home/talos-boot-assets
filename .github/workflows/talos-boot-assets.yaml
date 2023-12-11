@@ -244,7 +244,7 @@ jobs:
         uses: asdf-vm/actions/install@v2
         with:
           tool_versions: |
-            talosctl latest
+            talosctl ${{ needs.check-releases.outputs.talosReleaseTag }}
       - name: Install talosctl
         run: |
           asdf plugin add talosctl
