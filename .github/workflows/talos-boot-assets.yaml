@@ -220,7 +220,7 @@ jobs:
   build-boot-assets:
     needs:
       - check-releases
-      # - build-installer
+      - build-installer
     if: needs.check-releases.outputs.newTalosReleaseFound || github.event_name == 'workflow_dispatch'
     name: Build boot assets
     strategy:
