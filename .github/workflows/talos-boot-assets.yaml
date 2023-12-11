@@ -242,16 +242,9 @@ jobs:
 
     steps:
       - run: mkdir -p $PWD/_out
+      - run: echo "talosctl ${TALOSCTL_VERSION#v}" > .tool-versions
       - name: Install asdf
         uses: asdf-vm/actions/install@v2
-        with:
-          tool_versions: |
-            talosctl ${TALOSCTL_VERSION#v}
-      - name: Install talosctl
-        run: |
-          asdf plugin add talosctl
-          asdf install talosctl latest
-          asdf global talosctl latest
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
