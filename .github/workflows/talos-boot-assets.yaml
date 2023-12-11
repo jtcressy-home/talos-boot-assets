@@ -179,43 +179,43 @@ jobs:
   #         USERNAME: ${{ github.repository_owner}}
   #       run: make kernel PUSH=true
 
-  # build-installer:
-  #   needs:
-  #     - check-releases
-  #     - sync-talos-fork
-  #     # - build-kernel
-  #   if: needs.check-releases.outputs.newTalosReleaseFound || github.event_name == 'workflow_dispatch'
-  #   name: Build installer image
-  #   runs-on: ${{ github.event_name == 'workflow_dispatch' && 'buildjet-16vcpu-ubuntu-2204' || 'ubuntu-latest' }}
+  build-installer:
+    needs:
+      - check-releases
+      - sync-talos-fork
+      # - build-kernel
+    if: needs.check-releases.outputs.newTalosReleaseFound || github.event_name == 'workflow_dispatch'
+    name: Build installer image
+    runs-on: ${{ github.event_name == 'workflow_dispatch' && 'buildjet-16vcpu-ubuntu-2204' || 'ubuntu-latest' }}
 
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #       with:
-  #         repository: ${{ github.repository }}
-  #         ref: talos
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          ref: talos
 
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-  #     - name: Login to GitHub Container Registry
-  #       uses: docker/login-action@v3.0.0
-  #       with:
-  #         registry: ghcr.io
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: Build installer image
-  #       env:
-  #         PLATFORM: linux/amd64,linux/arm64
-  #         USERNAME: ${{ github.repository_owner}}
-  #         TAG: ${{ needs.check-releases.outputs.talosReleaseTag }}
-  #         # PKG_KERNEL: ghcr.io/${{ github.repository_owner}}/kernel:${{ needs.build-kernel.outputs.sha }}
-  #         # PKG_KERNEL: ghcr.io/siderolabs/kernel:${{ needs.check-releases.outputs.talosReleaseTag }}
-  #       run: make installer PUSH=true
+      - name: Build installer image
+        env:
+          PLATFORM: linux/amd64,linux/arm64
+          USERNAME: ${{ github.repository_owner}}
+          TAG: ${{ needs.check-releases.outputs.talosReleaseTag }}
+          # PKG_KERNEL: ghcr.io/${{ github.repository_owner}}/kernel:${{ needs.build-kernel.outputs.sha }}
+          # PKG_KERNEL: ghcr.io/siderolabs/kernel:${{ needs.check-releases.outputs.talosReleaseTag }}
+        run: make installer PUSH=true
 
   build-boot-assets:
     needs:
@@ -305,7 +305,7 @@ jobs:
         run: |
           docker run --rm --platform=linux/${{ matrix.arch }} -t -v $PWD/_out:/secureboot -v $PWD/_out:/out -v /dev:/dev --privileged --entrypoint /bin/imager ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} ${{ matrix.target }} \
             --arch ${{ matrix.arch }} \
-            --base-installer-image ghcr.io/siderolabs/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
+            --base-installer-image ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }} \
             --system-extension-image ghcr.io/siderolabs/intel-ucode:${{ env.INTEL_UCODE_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/i915-ucode:${{ env.I915_UCODE_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/amd-ucode:${{ env.AMD_UCODE_VERSION }} \
@@ -353,8 +353,8 @@ jobs:
 
       - name: Push installer image
         env:
-          ORIG_TAG: ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
-          VARIANT_TAG: ghcr.io/${{ github.repository_owner}}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}${{ matrix.variant != '' && format('-{0}', matrix.variant) || '' }}
+          ORIG_TAG: ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
+          VARIANT_TAG: ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}${{ matrix.variant != '' && format('-{0}', matrix.variant) || '' }}
         run: |
           docker load -i /tmp/talos-build-assets/metal-amd64${{ matrix.variant != '' && format('-{0}', matrix.variant) || '' }}-installer.tar
           docker tag ${ORIG_TAG} ${VARIANT_TAG}-amd64
