@@ -319,7 +319,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: talos-installer
-          path: _out/metal-*
+          path: _out/installer-*
           if-no-files-found: error
           retention-days: 1
 
@@ -356,10 +356,10 @@ jobs:
           ORIG_TAG: ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}
           VARIANT_TAG: ghcr.io/${{ github.repository_owner }}/installer:${{ needs.check-releases.outputs.talosReleaseTag }}${{ matrix.variant != '' && format('-{0}', matrix.variant) || '' }}
         run: |
-          docker load -i /tmp/talos-build-assets/metal-amd64${{ matrix.variant != '' && format('-{0}', matrix.variant) || '' }}-installer.tar
+          docker load -i /tmp/talos-build-assets/installer-amd64${{ matrix.variant != '' && format('-{0}', matrix.variant) || '' }}.tar
           docker tag ${ORIG_TAG} ${VARIANT_TAG}-amd64
           docker rmi ${ORIG_TAG}
-          docker load -i /tmp/talos-build-assets/metal-arm64${{ matrix.variant != '' && format('-{0}', matrix.variant) || '' }}-installer.tar
+          docker load -i /tmp/talos-build-assets/installer-arm64${{ matrix.variant != '' && format('-{0}', matrix.variant) || '' }}.tar
           docker tag ${ORIG_TAG} ${VARIANT_TAG}-arm64
           docker rmi ${ORIG_TAG}
           docker push ${VARIANT_TAG}-amd64
@@ -393,8 +393,8 @@ jobs:
           tag_name: ${{ needs.check-releases.outputs.talosReleaseTag }}
           body: ${{ needs.check-releases.outputs.talosReleaseBody }}
           files: |
-            /tmp/talos-build-assets/metal-amd64.iso
-            /tmp/talos-build-assets/metal-arm64.iso
-            /tmp/talos-build-assets/metal-amd64-secureboot.iso
-            /tmp/talos-build-assets/metal-arm64-secureboot.iso
+            /tmp/talos-build-assets/installer-amd64.iso
+            /tmp/talos-build-assets/installer-arm64.iso
+            /tmp/talos-build-assets/installer-amd64-secureboot.iso
+            /tmp/talos-build-assets/installer-arm64-secureboot.iso
         
