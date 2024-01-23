@@ -296,7 +296,7 @@ jobs:
       - name: Extension images digests
         # These extensions are tied to the talos release version, so we can lookup their exact compatible digests
         run: |
-          for pkg in drbd iscsi-tools thunderbolt;
+          for pkg in iscsi-tools thunderbolt;
           do
             tag=$(crane export ghcr.io/siderolabs/extensions:${{ needs.check-releases.outputs.talosReleaseTag }} | tar x -O image-digests | grep $pkg)
             echo "$(echo $pkg | tr '[:lower:]' '[:upper:]' | tr '-' '_')_VERSION=$(echo $tag | cut -d: -f2-3)" >> $GITHUB_ENV
@@ -310,7 +310,6 @@ jobs:
             --system-extension-image ghcr.io/siderolabs/i915-ucode:${{ env.I915_UCODE_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/amd-ucode:${{ env.AMD_UCODE_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/amdgpu-firmware:${{ env.AMDGPU_FIRMWARE_VERSION }} \
-            --system-extension-image ghcr.io/siderolabs/drbd:${{ env.DRBD_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/tailscale:${{ env.TAILSCALE_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/iscsi-tools:${{ env.ISCSI_TOOLS_VERSION }} \
             --system-extension-image ghcr.io/siderolabs/thunderbolt:${{ env.THUNDERBOLT_VERSION }}
